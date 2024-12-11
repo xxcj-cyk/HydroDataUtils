@@ -9,7 +9,7 @@ def get_cache_dir(app_name="hydro", dataset_name=None):
     if system == "Windows":
         cache_dir = os.path.join(home, "AppData", app_name, "temp")
     else:
-        cache_dir = os.path.join(home, ".cache", app_name, "temp")
+        cache_dir = os.path.join(home, "xxcj", ".cache", app_name, "temp")
 
     if dataset_name:
         cache_dir = os.path.join(cache_dir, dataset_name)
@@ -27,7 +27,7 @@ def get_dataset_dir(app_name="hydro", dataset_name=None):
     if system == "Windows":
         cache_dir = os.path.join(home, "AppData", app_name)
     else:
-        cache_dir = os.path.join(home, ".cache", app_name)
+        cache_dir = os.path.join(home, "xxcj", ".cache", app_name)
 
     if dataset_name:
         cache_dir = os.path.join(cache_dir, dataset_name)
