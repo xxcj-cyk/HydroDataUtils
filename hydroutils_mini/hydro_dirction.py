@@ -2,7 +2,7 @@ import os
 import platform
 
 
-def get_cache_dir(app_name="hydro", dataset_name=None):
+def get_cache_dirction(app_name="hydro", dataset_name=None):
     home = os.path.expanduser("~")
     system = platform.system()
 
@@ -20,7 +20,7 @@ def get_cache_dir(app_name="hydro", dataset_name=None):
     return cache_dir
 
 
-def get_dataset_dir(app_name="hydro", dataset_name=None):
+def get_dataset_dirction(app_name="hydro", dataset_name=None):
     home = os.path.expanduser("~")
     system = platform.system()
 
