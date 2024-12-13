@@ -222,3 +222,18 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
     # "30% low flow interval, the percent bias can be infinite\n"
     # "The number of these cases is " + str(num_lowtarget_zero)
     return outDict
+
+
+
+def calculate_and_record_metrics(
+    obs, pred, evaluation_metrics, target_col, fill_nan, eval_log
+):
+    fill_nan_value = fill_nan
+    inds = statistic_nd_error(obs, pred, fill_nan_value)
+
+    for evaluation_metric in evaluation_metrics:
+        eval_log[f"{evaluation_metric} of {target_col}"] = inds[
+            evaluation_metric
+        ].tolist()
+
+    return eval_log
