@@ -237,3 +237,98 @@ def calculate_and_record_metrics(
         ].tolist()
 
     return eval_log
+
+
+def cal_4_stat_inds(b):
+    """
+    Calculate four statistics indices: percentile 10 and 90, mean value, standard deviation
+
+    Parameters
+    ----------
+    b
+        input data
+
+    Returns
+    -------
+    list
+        [p10, p90, mean, std]
+    """
+    p10 = np.percentile(b, 10).astype(float)
+    p90 = np.percentile(b, 90).astype(float)
+    mean = np.mean(b).astype(float)
+    std = np.std(b).astype(float)
+    if std < 0.001:
+        std = 1
+    return [p10, p90, mean, std]
+
+
+def cal_stat(x: np.array) -> list:
+    """
+    Get statistic values of x (Exclude the NaN values)
+
+    Parameters
+    ----------
+    x: the array
+
+    Returns
+    -------
+    list
+        [10% quantile, 90% quantile, mean, std]
+    """
+    a = x.flatten()
+    b = a[~np.isnan(a)]
+    if b.size == 0:
+        # if b is [], then give it a 0 value
+        b = np.array([0])
+    return cal_4_stat_inds(b)
+
+
+def cal_stat_gamma(x):
+    """
+    Try to transform a time series data to normal distribution
+
+    Now only for daily streamflow, precipitation and evapotranspiration;
+    When nan values exist, just ignore them.
+
+    Parameters
+    ----------
+    x
+        time series data
+
+    Returns
+    -------
+    list
+        [p10, p90, mean, std]
+    """
+    a = x.flatten()
+    b = a[~np.isnan(a)]  # kick out Nan
+    b = np.log10(
+        np.sqrt(b) + 0.1
+    )  # do some tranformation to change gamma characteristics
+    return cal_4_stat_inds(b)
+
+
+def cal_stat_prcp_norm(x, meanprep):
+    """
+    normalized variable by precipitation with cal_stat_gamma
+
+    dividing a var with prcp means we can get a normalized var without rainfall's magnitude's influence,
+    so that we don't have bias for dry and wet basins
+
+    Parameters
+    ----------
+    x
+        data to be normalized
+    meanprep
+        meanprep = readAttr(gageDict['id'], ['p_mean'])
+
+    Returns
+    -------
+    list
+        [p10, p90, mean, std]
+    """
+    # meanprep = readAttr(gageDict['id'], ['q_mean'])
+    tempprep = np.tile(meanprep, (1, x.shape[1]))
+    # unit (mm/day)/(mm/day)
+    flowua = x / tempprep
+    return cal_stat_gamma(flowua)
