@@ -4,6 +4,7 @@ import numpy as np
 import scipy
 import HydroErr as he
 
+
 def statistic_1d_error(targ_i, pred_i):
     """statistics for one"""
     ind = np.where(np.logical_and(~np.isnan(pred_i), ~np.isnan(targ_i)))[0]
@@ -55,6 +56,22 @@ def statistic_1d_error(targ_i, pred_i):
             "The number of data is less than 2, we don't calculate the statistics."
         )
 
+
+def KGE(xs, xo):
+    """
+    Kling Gupta Efficiency (Gupta et al., 2009, http://dx.doi.org/10.1016/j.jhydrol.2009.08.003)
+    input:
+        xs: simulated
+        xo: observed
+    output:
+        KGE: Kling Gupta Efficiency
+    """
+    r = np.corrcoef(xo, xs)[0, 1]
+    alpha = np.std(xs) / np.std(xo)
+    beta = np.mean(xs) / np.mean(xo)
+    return 1 - np.sqrt((r - 1) ** 2 + (alpha - 1) ** 2 + (beta - 1) ** 2)
+
+
 def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -> dict:
     """
     Statistics indicators include: Bias, RMSE, ubRMSE, Corr, R2, NSE, KGE, FHV, FLV
@@ -78,7 +95,7 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
         Bias, RMSE, ubRMSE, Corr, R2, NSE, KGE, FHV, FLV
     """
     if len(target.shape) == 3:
-        assert type(fill_nan) in [list, tuple, np.ndarray] 
+        assert type(fill_nan) in [list, tuple, np.ndarray]
         if type(fill_nan) is not list or len(fill_nan) != target.shape[-1]:
             raise RuntimeError("Please give more fill_nan choices")
     if len(target.shape) == 2 and (type(fill_nan) is list or type(fill_nan) is tuple):
@@ -165,7 +182,7 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
     Corr = np.full(ngrid, np.nan)
     R2 = np.full(ngrid, np.nan)
     NSE = np.full(ngrid, np.nan)
-    KGE = np.full(ngrid, np.nan)
+    KGe = np.full(ngrid, np.nan)
     PBiaslow = np.full(ngrid, np.nan)
     PBiashigh = np.full(ngrid, np.nan)
     PBias = np.full(ngrid, np.nan)
@@ -188,7 +205,7 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
                 SSRes = np.sum((yy - xx) ** 2)
                 R2[k] = 1 - SSRes / SST
                 NSE[k] = 1 - SSRes / SST
-                KGE[k] = KGE(xx, yy)
+                KGe[k] = KGE(xx, yy)
             # FHV the peak flows bias 2%
             # FLV the low flows bias bottom 30%, log space
             pred_sort = np.sort(xx)
@@ -214,7 +231,7 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
         Corr=Corr,
         R2=R2,
         NSE=NSE,
-        KGE=KGE,
+        KGE=KGe,
         FHV=PBiashigh,
         FLV=PBiaslow,
     )
@@ -222,7 +239,6 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
     # "30% low flow interval, the percent bias can be infinite\n"
     # "The number of these cases is " + str(num_lowtarget_zero)
     return outDict
-
 
 
 def calculate_and_record_metrics(

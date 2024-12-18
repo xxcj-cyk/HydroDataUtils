@@ -1,6 +1,7 @@
 import datetime
 from typing import Union
 import numpy as np
+import pandas as pd
 
 
 def t2str(t_: Union[str, datetime.datetime]):
@@ -30,3 +31,12 @@ def t_range_days(t_range, *, step=np.timedelta64(1, "D")) -> np.array:
     startdata = datetime.datetime.strptime(t_range[0], "%Y-%m-%d")
     enddata = datetime.datetime.strptime(t_range[1], "%Y-%m-%d")
     return np.arange(startdata, enddata, step)
+
+def read_merge_timestep(nt, data_temp, t_lst, obs):
+    result = np.full([nt], np.nan)
+    df_date = data_temp[[0, 1, 2]]
+    df_date.columns = ["year", "month", "day"]
+    date = pd.to_datetime(df_date).values.astype("datetime64[D]")
+    _, ind1, ind2 = np.intersect1d(date, t_lst, return_indices=True)
+    result[ind2] = obs[ind1]
+    return result
