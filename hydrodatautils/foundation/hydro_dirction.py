@@ -1,15 +1,31 @@
 import os
 import platform
 
-
-def get_cache_dir(app_name="hydro", dataset_name=None):
+def get_origin_dir(dataset_name=None):
     home = os.path.expanduser("~")
     system = platform.system()
 
     if system == "Windows":
-        cache_dir = os.path.join(home, "AppData", app_name, "temp")
+        origin_dir = os.path.join("E:", "Takusan_no_Code", "Dataset", "Original_Dataset")
     else:
-        cache_dir = os.path.join(home, ".cache", app_name, "temp")
+        origin_dir = os.path.join(home, "Dataset", "Original_Dataset")
+
+    if dataset_name:
+        origin_dir = os.path.join(origin_dir, dataset_name)
+
+    if not os.path.exists(origin_dir):
+        os.makedirs(origin_dir)
+
+    return origin_dir
+
+def get_cache_dir(dataset_name=None):
+    home = os.path.expanduser("~")
+    system = platform.system()
+
+    if system == "Windows":
+        cache_dir = os.path.join("E:", "Takusan_no_Code", "Dataset", "Interim_Dataset", "temp")
+    else:
+        cache_dir = os.path.join(home, "Dataset", "Interim_Dataset", "temp")
 
     if dataset_name:
         cache_dir = os.path.join(cache_dir, dataset_name)
@@ -19,15 +35,14 @@ def get_cache_dir(app_name="hydro", dataset_name=None):
 
     return cache_dir
 
-
-def get_export_dir(app_name="hydro", dataset_name=None):
+def get_export_dir(dataset_name=None):
     home = os.path.expanduser("~")
     system = platform.system()
 
     if system == "Windows":
-        export_dir = os.path.join(home, "AppData", app_name)
+        export_dir = os.path.join("E:", "Takusan_no_Code", "Dataset", "Processed_Dataset")
     else:
-        export_dir = os.path.join(home, ".cache", app_name)
+        export_dir = os.path.join(home, "Dataset", "Processed_Dataset")
 
     if dataset_name:
         export_dir = os.path.join(export_dir, dataset_name)
