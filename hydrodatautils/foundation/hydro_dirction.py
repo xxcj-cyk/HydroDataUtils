@@ -8,7 +8,7 @@ def get_origin_dir(dataset_type=None, dataset_name=None):
     if system == "Windows":
         origin_dir = os.path.join("E:\\", "Takusan_no_Code", "Dataset", "Original_Dataset", dataset_type)
     else:
-        origin_dir = os.path.join(home, "Dataset", "Original_Dataset")
+        origin_dir = os.path.join(home, "Dataset", "Original_Dataset", dataset_type)
 
     if dataset_name:
         origin_dir = os.path.join(origin_dir, dataset_name)
@@ -25,7 +25,7 @@ def get_cache_dir(dataset_type=None, dataset_name=None):
     if system == "Windows":
         cache_dir = os.path.join("E:\\", "Takusan_no_Code", "Dataset", "Interim_Dataset", dataset_type)
     else:
-        cache_dir = os.path.join(home, "Dataset", "Interim_Dataset")
+        cache_dir = os.path.join(home, "Dataset", "Interim_Dataset", dataset_type)
 
     if dataset_name:
         cache_dir = os.path.join(cache_dir, dataset_name)
@@ -42,7 +42,7 @@ def get_export_dir(dataset_type=None, dataset_name=None):
     if system == "Windows":
         export_dir = os.path.join("E:\\", "Takusan_no_Code", "Dataset", "Processed_Dataset", dataset_type)
     else:
-        export_dir = os.path.join(home, "Dataset", "Processed_Dataset")
+        export_dir = os.path.join(home, "Dataset", "Processed_Dataset", dataset_type)
 
     if dataset_name:
         export_dir = os.path.join(export_dir, dataset_name)
