@@ -1,12 +1,12 @@
 import os
 import platform
 
-def get_origin_dir(dataset_name=None):
+def get_origin_dir(dataset_type=None, dataset_name=None):
     home = os.path.expanduser("~")
     system = platform.system()
 
     if system == "Windows":
-        origin_dir = os.path.join("E:\\", "Takusan_no_Code", "Dataset", "Original_Dataset")
+        origin_dir = os.path.join("E:\\", "Takusan_no_Code", "Dataset", "Original_Dataset", dataset_type)
     else:
         origin_dir = os.path.join(home, "Dataset", "Original_Dataset")
 
@@ -18,12 +18,12 @@ def get_origin_dir(dataset_name=None):
 
     return origin_dir
 
-def get_cache_dir(dataset_name=None):
+def get_cache_dir(dataset_type=None, dataset_name=None):
     home = os.path.expanduser("~")
     system = platform.system()
 
     if system == "Windows":
-        cache_dir = os.path.join("E:\\", "Takusan_no_Code", "Dataset", "Interim_Dataset")
+        cache_dir = os.path.join("E:\\", "Takusan_no_Code", "Dataset", "Interim_Dataset", dataset_type)
     else:
         cache_dir = os.path.join(home, "Dataset", "Interim_Dataset")
 
@@ -35,12 +35,12 @@ def get_cache_dir(dataset_name=None):
 
     return cache_dir
 
-def get_export_dir(dataset_name=None):
+def get_export_dir(dataset_type=None, dataset_name=None):
     home = os.path.expanduser("~")
     system = platform.system()
 
     if system == "Windows":
-        export_dir = os.path.join("E:\\", "Takusan_no_Code", "Dataset", "Processed_Dataset")
+        export_dir = os.path.join("E:\\", "Takusan_no_Code", "Dataset", "Processed_Dataset", dataset_type)
     else:
         export_dir = os.path.join(home, "Dataset", "Processed_Dataset")
 
