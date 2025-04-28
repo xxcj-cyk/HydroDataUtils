@@ -1,3 +1,12 @@
+"""
+@Author:             Yikai CHAI
+@Email:              chaiyikai@mail.dlut.edu.cn
+@Company:            Dalian University of Technology
+@Date:               2025-03-23 19:03:21
+@Last Modified by:   Yikai CHAI
+@Last Modified time: 2025-04-26 16:24:15
+"""
+
 import datetime
 from typing import Union
 import numpy as np
@@ -31,6 +40,30 @@ def t_range_days(t_range, *, step=np.timedelta64(1, "D")) -> np.array:
     startdata = datetime.datetime.strptime(t_range[0], "%Y-%m-%d")
     enddata = datetime.datetime.strptime(t_range[1], "%Y-%m-%d")
     return np.arange(startdata, enddata, step)
+
+
+def t_range_hours(t_range, *, step=np.timedelta64(1, "h")) -> np.array:
+    """
+    Transform the two-value t_range list to a uniformly-spaced list with hourly intervals.
+    For example, ["2000-01-01 00:00", "2000-01-01 05:00"] -> 
+    ["2000-01-01 00:00", "2000-01-01 01:00", "2000-01-01 02:00", "2000-01-01 03:00", "2000-01-01 04:00"]
+    
+    Parameters
+    ----------
+    t_range
+        two-value t_range list with time format "YYYY-MM-DD HH:MM"
+    step
+        the time interval; its default value is 1 hour
+        
+    Returns
+    -------
+    np.array
+        a uniformly-spaced (hourly) list
+    """
+    startdata = datetime.datetime.strptime(t_range[0], "%Y-%m-%d %H:%M")
+    enddata = datetime.datetime.strptime(t_range[1], "%Y-%m-%d %H:%M")
+    return np.arange(startdata, enddata, step)
+
 
 def read_merge_timestep(nt, data_temp, t_lst, obs):
     result = np.full([nt], np.nan)
