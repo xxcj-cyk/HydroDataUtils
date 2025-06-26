@@ -5,6 +5,34 @@ import scipy
 import HydroErr as he
 
 
+def pfe(obs, sim):
+    obs = np.array(obs)
+    sim = np.array(sim)
+    mask = ~np.isnan(obs)
+    obs = obs[mask]
+    sim = sim[mask]
+    if len(obs) == 0:
+        return np.nan
+    peak_obs = np.max(obs)
+    peak_sim = np.max(sim)
+    if peak_obs == 0:
+        return np.inf if peak_sim != 0 else 0
+    return (peak_sim - peak_obs) / peak_obs * 100
+
+
+def pte(obs, sim):
+    obs = np.array(obs)
+    sim = np.array(sim)
+    mask = ~np.isnan(obs)
+    obs = obs[mask]
+    sim = sim[mask]
+    if len(obs) == 0:
+        return np.nan
+    peak_time_obs = np.argmax(obs)
+    peak_time_sim = np.argmax(sim)
+    return peak_time_sim - peak_time_obs
+
+
 def statistic_1d_error(targ_i, pred_i):
     """statistics for one"""
     ind = np.where(np.logical_and(~np.isnan(pred_i), ~np.isnan(targ_i)))[0]
@@ -13,23 +41,17 @@ def statistic_1d_error(targ_i, pred_i):
         xx = pred_i[ind]
         yy = targ_i[ind]
         bias = he.me(xx, yy)
-        # RMSE
         rmse = he.rmse(xx, yy)
-        # ubRMSE
         pred_mean = np.nanmean(xx)
         target_mean = np.nanmean(yy)
         pred_anom = xx - pred_mean
         target_anom = yy - target_mean
         ubrmse = np.sqrt(np.nanmean((pred_anom - target_anom) ** 2))
-        # rho R2 NSE
         corr = he.pearson_r(xx, yy)
         r2 = he.r_squared(xx, yy)
         nse = he.nse(xx, yy)
         kge = he.kge_2009(xx, yy)
-        # percent bias
         pbias = np.sum(xx - yy) / np.sum(yy) * 100
-        # FHV the peak flows bias 2%
-        # FLV the low flows bias bottom 30%, log space
         pred_sort = np.sort(xx)
         target_sort = np.sort(yy)
         indexlow = round(0.3 * len(pred_sort))
@@ -40,6 +62,8 @@ def statistic_1d_error(targ_i, pred_i):
         hightarget = target_sort[indexhigh:]
         pbiaslow = np.sum(lowpred - lowtarget) / np.sum(lowtarget) * 100
         pbiashigh = np.sum(highpred - hightarget) / np.sum(hightarget) * 100
+        pfe_val = pfe(yy, xx)
+        pte_val = pte(yy, xx)
         return dict(
             Bias=bias,
             RMSE=rmse,
@@ -50,6 +74,8 @@ def statistic_1d_error(targ_i, pred_i):
             KGE=kge,
             FHV=pbiashigh,
             FLV=pbiaslow,
+            PFE=pfe_val,
+            PTE=pte_val,
         )
     else:
         raise ValueError(
@@ -74,7 +100,7 @@ def KGE(xs, xo):
 
 def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -> dict:
     """
-    Statistics indicators include: Bias, RMSE, ubRMSE, Corr, R2, NSE, KGE, FHV, FLV
+    Statistics indicators include: Bias, RMSE, ubRMSE, Corr, R2, NSE, KGE, FHV, FLV, PFE, PTE
 
     Parameters
     ----------
@@ -108,7 +134,6 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
             tmp = target[i]
             non_nan_idx_tmp = [j for j in range(tmp.size) if not np.isnan(tmp[j])]
             each_non_nan_idx.append(non_nan_idx_tmp)
-            # TODO: now all_non_nan_idx is only set for ET, because of its irregular nan values
             all_non_nan_idx = all_non_nan_idx + non_nan_idx_tmp
             non_nan_idx = np.unique(all_non_nan_idx).tolist()
         # some NaN data appear in different dates in different basins, so we have to calculate the metric for each basin
@@ -125,11 +150,12 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
             KGE=[],
             FHV=[],
             FLV=[],
+            PFE=[],
+            PTE=[],
         )
     if fill_nan == "sum":
         for i in range(target.shape[0]):
             tmp = target[i]
-            # non_nan_idx = each_non_nan_idx[i]
             targ_i = tmp[non_nan_idx]
             pred_i = np.add.reduceat(pred[i], non_nan_idx)
             dict_i = statistic_1d_error(targ_i, pred_i)
@@ -142,11 +168,12 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
             out_dict["KGE"].append(dict_i["KGE"])
             out_dict["FHV"].append(dict_i["FHV"])
             out_dict["FLV"].append(dict_i["FLV"])
+            out_dict["PFE"].append(dict_i["PFE"])
+            out_dict["PTE"].append(dict_i["PTE"])
         return out_dict
     elif fill_nan == "mean":
         for i in range(target.shape[0]):
             tmp = target[i]
-            # non_nan_idx = each_non_nan_idx[i]
             targ_i = tmp[non_nan_idx]
             pred_i_sum = np.add.reduceat(pred[i], non_nan_idx)
             if non_nan_idx[-1] < len(pred[i]):
@@ -165,6 +192,8 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
             out_dict["KGE"].append(dict_i["KGE"])
             out_dict["FHV"].append(dict_i["FHV"])
             out_dict["FLV"].append(dict_i["FLV"])
+            out_dict["PFE"].append(dict_i["PFE"])
+            out_dict["PTE"].append(dict_i["PTE"])
         return out_dict
     # TODO: refactor Dapeng's code
     ngrid, nt = pred.shape
@@ -186,6 +215,8 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
     PBiaslow = np.full(ngrid, np.nan)
     PBiashigh = np.full(ngrid, np.nan)
     PBias = np.full(ngrid, np.nan)
+    PFE_arr = np.full(ngrid, np.nan)
+    PTE_arr = np.full(ngrid, np.nan)
     num_lowtarget_zero = 0
     for k in range(ngrid):
         x = pred[k, :]
@@ -224,6 +255,9 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
                 warnings.simplefilter("ignore", category=RuntimeWarning)
                 PBiaslow[k] = np.sum(lowpred - lowtarget) / np.sum(lowtarget) * 100
             PBiashigh[k] = np.sum(highpred - hightarget) / np.sum(hightarget) * 100
+            # 新增PFE和PTE
+            PFE_arr[k] = pfe(yy, xx)
+            PTE_arr[k] = pte(yy, xx)
     outDict = dict(
         Bias=Bias,
         RMSE=RMSE,
@@ -234,10 +268,9 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
         KGE=KGe,
         FHV=PBiashigh,
         FLV=PBiaslow,
+        PFE=PFE_arr,
+        PTE=PTE_arr,
     )
-    # "The CDF of BFLV will not reach 1.0 because some basins have all zero flow observations for the "
-    # "30% low flow interval, the percent bias can be infinite\n"
-    # "The number of these cases is " + str(num_lowtarget_zero)
     return outDict
 
 
