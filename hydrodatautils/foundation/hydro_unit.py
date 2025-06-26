@@ -9,7 +9,7 @@ def _convert_target_unit(target_unit):
     return None, None
 
 
-def streamflow_unit_conv(streamflow, area, target_unit="mm/d", inverse=False):
+def streamflow_unit_conv(streamflow, area, target_unit="mm/d", inverse=True):
     """Convert the unit of streamflow data to mm/xx(time) for a basin or inverse.
 
     Parameters
