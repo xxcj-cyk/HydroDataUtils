@@ -1,3 +1,12 @@
+"""
+@Author:             Yikai CHAI
+@Email:              chaiyikai@mail.dlut.edu.cn
+@Company:            Dalian University of Technology
+@Date:               2025-03-23 19:03:21
+@Last Modified by:   Yikai CHAI
+@Last Modified time: 2025-04-23 09:03:58
+"""
+
 import os
 import platform
 
