@@ -37,6 +37,8 @@ def get_latest_file_in_a_lst(lst):
     str
         the latest file
     """
+    if not lst:  # Added empty list check, modified during migration testing
+        return None
     lst_ctime = [os.path.getctime(file) for file in lst]
     sort_idx = np.argsort(lst_ctime)
     return lst[sort_idx[-1]]

@@ -255,7 +255,6 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
                 warnings.simplefilter("ignore", category=RuntimeWarning)
                 PBiaslow[k] = np.sum(lowpred - lowtarget) / np.sum(lowtarget) * 100
             PBiashigh[k] = np.sum(highpred - hightarget) / np.sum(hightarget) * 100
-            # 新增PFE和PTE
             PFE_arr[k] = pfe(yy, xx)
             PTE_arr[k] = pte(yy, xx)
     outDict = dict(

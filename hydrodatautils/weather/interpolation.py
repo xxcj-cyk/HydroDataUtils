@@ -1,6 +1,6 @@
 '''
-此代码包含IDW插值方法、球面距离和平面距离计算
-编写：柴熠垲
+This code contains IDW interpolation method, spherical distance and plane distance calculation
+Author: Yikai CHAI
 '''
 
 import numpy as np
@@ -8,18 +8,18 @@ from math import radians, cos, sin, asin, sqrt
 
 def distance_lonlat(lon1, lat1, lon2, lat2):
     """
-    计算两点间球面距离
+    Calculate spherical distance between two points
 
     Args:
-        lon1 (float): 点1的经度
-        lat1 (float): 点1的纬度
-        lon2 (float): 点2的经度
-        lat2 (float): 点2的纬度
+        lon1 (float): Longitude of point 1
+        lat1 (float): Latitude of point 1
+        lon2 (float): Longitude of point 2
+        lat2 (float): Latitude of point 2
 
     returns:
-        d (float): 两点间球面距离
+        d (float): Spherical distance between two points
     """
-    R = 6372.8 # 设置地球半径的常数，单位为千米
+    R = 6372.8 # Set the constant for Earth's radius, unit is kilometers
     # Haversine Formula
     dLon = radians(lon2 - lon1)
     dLat = radians(lat2 - lat1)
@@ -32,34 +32,34 @@ def distance_lonlat(lon1, lat1, lon2, lat2):
 
 def IDW(x, y, z, xi, yi):
     """
-    计算每个点的插值结果
+    Calculate the interpolation result for each point
 
     Args:
-        x (array): 已知点的x坐标
-        y (array): 已知点的y坐标
-        z (array): 已知点的值
-        xi (array): 目标点的x坐标
-        yi (array): 目标点的y坐标
+        x (array): x coordinates of known points
+        y (array): y coordinates of known points
+        z (array): values of known points
+        xi (array): x coordinates of target points
+        yi (array): y coordinates of target points
 
     returns:
-        lstxyzi (list): 目标点的x、y坐标和插值结果
+        lstxyzi (list): x, y coordinates and interpolation results of target points
     """
-    lstxyzi = [] # 用于存储目标点的x、y坐标和插值结果
-    for p in range(len(xi)): # 遍历目标点的x坐标
-        for q in range(len(yi)): # 遍历目标点的y坐标
-            lstdist = [] # 用于存储该目标点到所有已知点的距离
-            for s in range(len(x)): # 遍历已知点
-                d = distance_lonlat(x[s], y[s], xi[p], yi[q]) # 计算该目标点到所有已知点的球面距离
+    lstxyzi = [] # Used to store x, y coordinates and interpolation results of target points
+    for p in range(len(xi)): # Iterate through x coordinates of target points
+        for q in range(len(yi)): # Iterate through y coordinates of target points
+            lstdist = [] # Used to store the distance from this target point to all known points
+            for s in range(len(x)): # Iterate through known points
+                d = distance_lonlat(x[s], y[s], xi[p], yi[q]) # Calculate the spherical distance from this target point to all known points
                 lstdist.append(d)
-            # 计算插值
+            # Calculate interpolation
             '''
-            np.power(基数，指数)
-            可调整参数: 括号里指数可以输入1或者2
+            np.power(base, exponent)
+            Adjustable parameter: the exponent in parentheses can be input as 1 or 2
             '''
-            w = list((1 / np.power(lstdist, 2))) # 权重。
-            sumw = np.sum(w) # 权重总和
-            sumwzi = np.sum(np.array(w) * np.array(z)) # 加权和
-            u = sumwzi / sumw # 加权平均
-            xyzi = [xi[p], yi[q], u] # 组合目标点的x、y坐标和插值结果为列表
+            w = list((1 / np.power(lstdist, 2))) # Weight
+            sumw = np.sum(w) # Sum of weights
+            sumwzi = np.sum(np.array(w) * np.array(z)) # Weighted sum
+            u = sumwzi / sumw # Weighted average
+            xyzi = [xi[p], yi[q], u] # Combine x, y coordinates and interpolation result of target point into a list
             lstxyzi.append(xyzi)
     return lstxyzi

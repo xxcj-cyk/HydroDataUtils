@@ -1,6 +1,7 @@
 """
-此代码用于网格化数据, 包括将数据转换为nc文件, 将数据插值后转换为nc文件, 生成网格, 生成mask等功能
-编写：柴熠垲
+This code is used for gridding data, including converting data to nc files, 
+converting data to nc files after interpolation, generating grids, generating masks and other functions.
+Author: Yikai CHAI
 """
 
 import math
@@ -15,17 +16,17 @@ from .interpolation import IDW
 
 def to_xarray(filename, src: pd.DataFrame, x_axis="x", y_axis="y", variable="value"):
     """
-    将dataframe数据转换为nc文件
+    Convert dataframe data to nc file
 
     Args:
-        filename (str): 目标 .nc 文件的文件名
-        src (pd.DataFrame): 包含 x, y 轴坐标和变量值的源 DataFrame
-        x_axis (str): DataFrame 中作为 x 轴的列名，默认为 'x'
-        y_axis (str): DataFrame 中作为 y 轴的列名，默认为 'y'
-        variable (str): DataFrame 中作为变量值的列名，默认为 'value'
+        filename (str): The filename of the target .nc file
+        src (pd.DataFrame): Source DataFrame containing x, y axis coordinates and variable values
+        x_axis (str): Column name in DataFrame used as x-axis, default is 'x'
+        y_axis (str): Column name in DataFrame used as y-axis, default is 'y'
+        variable (str): Column name in DataFrame used as variable value, default is 'value'
 
     Returns:
-        xarray.Dataset: 读取 .nc 文件后的 xarray 数据集对象
+        xarray.Dataset: xarray dataset object after reading the .nc file
     """
 
     data = nc.Dataset(filename, "w", format="NETCDF4")
@@ -33,16 +34,16 @@ def to_xarray(filename, src: pd.DataFrame, x_axis="x", y_axis="y", variable="val
     x_dim = np.sort(np.unique(src[x_axis]))
     y_dim = np.sort(np.unique(src[y_axis]))[::-1]
 
-    # 创建维度，第一个参数为维度名，第二个参数为维度长度
+    # Create dimension, first parameter is dimension name, second parameter is dimension length
     data.createDimension(x_axis, x_dim.shape[0])
     data.createDimension(y_axis, y_dim.shape[0])
 
-    # 创建变量，变量部分不需要传输数据
+    # Create variable, variable part doesn't need to transmit data
     x = data.createVariable(x_axis, np.float64, (x_axis,))
     y = data.createVariable(y_axis, np.float64, (y_axis,))
     value = data.createVariable(variable, np.float32, (y_axis, x_axis))
 
-    # 把有数据的nc文件，赋值给创建的nc文件
+    # Assign the nc file with data to the created nc file
     x[:] = x_dim[:]
     y[:] = y_dim[:]
 
@@ -54,7 +55,7 @@ def to_xarray(filename, src: pd.DataFrame, x_axis="x", y_axis="y", variable="val
 
     value[:, :] = array[:, :]
 
-    # 最后把data关闭
+    # Finally close the data
     data.close()
 
     return xr.open_dataset(filename, engine="netcdf4")
@@ -69,7 +70,7 @@ def xarray_to_lonlat(xds, x_axis="x", y_axis="y"):
 
 def idw_to_xarray(filename, df, array, x_axis="x", y_axis="y", variable="value"):
     """
-    将dataframe数据idw插值后转换为nc文件
+    Convert dataframe data to nc file after IDW interpolation
     """
     x = df[x_axis].to_numpy()
     y = df[y_axis].to_numpy()
@@ -86,47 +87,47 @@ def idw_to_xarray(filename, df, array, x_axis="x", y_axis="y", variable="value")
 
 def find_center(v, resolution, offset, plusone=False):
     """
-    用于确定边界所在网格的中心点坐标
+    Determine the center point coordinates of the grid where the boundary is located
 
     Args:
-        v (float): 边界点的坐标
-        resolution (float): 网格的分辨率
-        offset (float): 网格的偏移量
-        plusone (bool, 可选): 一个标志位, 用于决定在某些边界条件下是否需要将返回的中心点坐标增加一个网格的分辨率, 默认为 False
+        v (float): Coordinate of the boundary point
+        resolution (float): Resolution of the grid
+        offset (float): Offset of the grid
+        plusone (bool, optional): A flag bit to determine whether to increase the returned center point coordinate by one grid resolution under certain boundary conditions, default is False
 
     Returns:
-        float: 网格中心点坐标
+        float: Grid center point coordinate
     """
     center = (
         math.floor(v) - offset
-    )  # center为v向下取整后减去偏移量offset的值；寻找离v最近的可能的网格中心点
-    while center <= math.ceil(v) + offset:  # 找到满足条件的网格中心或者超过v的可能范围
+    )  # center is the value of v rounded down minus the offset; find the nearest possible grid center point to v
+    while center <= math.ceil(v) + offset:  # Find the grid center that satisfies the condition or exceeds the possible range of v
         if (
             abs(center - v) <= resolution / 2
-        ):  # 如果center与v的差的绝对值小于或等于网格分辨率的一半，说明v位于当前center代表的网格内
+        ):  # If the absolute value of the difference between center and v is less than or equal to half of the grid resolution, v is located within the grid represented by the current center
             if (
                 abs(abs(center - v) - resolution / 2) < 0.00001 and plusone
-            ):  # 如果v正好在网格的边缘，并且plusone为True，则将中心点坐标增加一个网格的分辨率
+            ):  # If v is exactly at the edge of the grid and plusone is True, increase the center point coordinate by one grid resolution
                 return center + resolution
             else:
-                return center  # 其他情况下，返回当前的中心点坐标
-        center += resolution  # 如果当前的center不满足条件，增加resolution以尝试下一个可能的网格中心
-    return None  # 如果函数未能在循环中返回任何中心点坐标，最终返回None，表示没有找到满足条件的网格中心
+                return center  # In other cases, return the current center point coordinate
+        center += resolution  # If the current center doesn't satisfy the condition, increase resolution to try the next possible grid center
+    return None  # If the function fails to return any center point coordinate in the loop, return None, indicating that no grid center satisfying the condition was found
 
 
 def gen_grids(bbox, resolution, offset, x_axis="x", y_axis="y"):
     """
-    用于生成geopandas格式网格
+    Generate grids in geopandas format
 
     Args:
-        bbox (tuple): 流域的边界框
-        resolution (float): 网格的分辨率
-        offset (tuple): 网格的偏移量
-        x_axis (str, 可选): 用作X轴的列名, 默认为"x"
-        y_axis (str, 可选): 用作Y轴的列名, 默认为"y"
+        bbox (tuple): Boundary box of the watershed
+        resolution (float): Resolution of the grid
+        offset (tuple): Offset of the grid
+        x_axis (str, optional): Column name used as X-axis, default is "x"
+        y_axis (str, optional): Column name used as Y-axis, default is "y"
 
     Returns:
-        gpd.GeoDataFrame: 包含网格信息的地理数据框
+        gpd.GeoDataFrame: GeoDataFrame containing grid information
     """
 
     lx = bbox[0]
@@ -180,15 +181,15 @@ def gen_grids(bbox, resolution, offset, x_axis="x", y_axis="y"):
 
 def gen_mask(watershed, resolution, offset, filename, x_axis="x", y_axis="y"):
     """
-    基于流域数据生成空间覆盖(mask)文件
+    Generate spatial coverage (mask) file based on watershed data
 
     Args:
-        watershed (GeoDataFrame): 输入的地理数据框, 应包含流域的地理信息和几何形状
-        resolution (float): 网格的分辨率, 单位是度
-        offset (tuple): 网格的偏移量, 单位是度
-        filename (str): 生成的NetCDF文件的文件名
-        x_axis (str, 可选): 用作X轴的列名, 默认为"x"
-        y_axis (str, 可选): 用作Y轴的列名, 默认为"y"
+        watershed (GeoDataFrame): Input GeoDataFrame, should contain geographic information and geometry of the watershed
+        resolution (float): Resolution of the grid, unit is degrees
+        offset (tuple): Offset of the grid, unit is degrees
+        filename (str): Filename of the generated NetCDF file
+        x_axis (str, optional): Column name used as X-axis, default is "x"
+        y_axis (str, optional): Column name used as Y-axis, default is "y"
 
     Returns:
 
@@ -196,8 +197,8 @@ def gen_mask(watershed, resolution, offset, filename, x_axis="x", y_axis="y"):
 
     for index, row in watershed.iterrows():
         # wid = row[fieldname]
-        geo = row["geometry"]  # 获取流域的几何形状
-        bbox = geo.bounds  # 获取流域的边界框
+        geo = row["geometry"]  # Get the geometry of the watershed
+        bbox = geo.bounds  # Get the boundary box of the watershed
 
         grid = gen_grids(bbox, resolution, offset, x_axis=x_axis, y_axis=y_axis)
         grid = grid.to_crs(epsg=3857)
