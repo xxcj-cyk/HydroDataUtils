@@ -33,6 +33,66 @@ def pte(obs, sim):
     return peak_time_sim - peak_time_obs
 
 
+def high_rmse(obs, sim, high_ratio=0.8):
+    """
+    计算高值区域（>= 观测峰值 * high_ratio）的RMSE
+    
+    Parameters
+    ----------
+    obs : array-like
+        观测值
+    sim : array-like
+        模拟值
+    high_ratio : float
+        高值区域阈值比例（相对于观测峰值），默认 0.8
+        表示将所有 >= obs_peak * high_ratio 的时段视为"高值区域"
+    
+    Returns
+    -------
+    float
+        高值区域的RMSE，如果没有高值区域数据则返回 np.nan
+    """
+    obs = np.array(obs)
+    sim = np.array(sim)
+    # 同时过滤 obs 和 sim 中的 NaN 和 inf 值，避免数值不稳定
+    mask = np.logical_and(
+        np.logical_and(~np.isnan(obs), ~np.isnan(sim)),
+        np.logical_and(np.isfinite(obs), np.isfinite(sim))
+    )
+    obs = obs[mask]
+    sim = sim[mask]
+    if len(obs) == 0:
+        return np.nan
+    
+    # 计算观测峰值
+    obs_peak = np.max(obs)
+    
+    # 如果峰值 <= 0 或为 inf，则高值区域退化为整个数据集
+    if obs_peak <= 0 or not np.isfinite(obs_peak):
+        high_mask = np.ones_like(obs, dtype=bool)
+    else:
+        threshold = obs_peak * high_ratio
+        high_mask = obs >= threshold
+    
+    # 筛选高值区域的数据
+    if np.sum(high_mask) > 0:
+        obs_high = obs[high_mask]
+        sim_high = sim[high_mask]
+        # 再次检查筛选后的数据是否有效
+        if len(obs_high) == 0:
+            return np.nan
+        # 计算RMSE，使用 np.nanmean 增加健壮性
+        diff_sq = (sim_high - obs_high) ** 2
+        mean_diff_sq = np.nanmean(diff_sq)
+        if not np.isfinite(mean_diff_sq) or mean_diff_sq < 0:
+            return np.nan
+        rmse_high = np.sqrt(mean_diff_sq)
+        # 确保返回值是有限的
+        return rmse_high if np.isfinite(rmse_high) else np.nan
+    else:
+        return np.nan
+
+
 def statistic_1d_error(targ_i, pred_i):
     """statistics for one"""
     ind = np.where(np.logical_and(~np.isnan(pred_i), ~np.isnan(targ_i)))[0]
@@ -64,6 +124,7 @@ def statistic_1d_error(targ_i, pred_i):
         pbiashigh = np.sum(highpred - hightarget) / np.sum(hightarget) * 100
         pfe_val = pfe(yy, xx)
         pte_val = pte(yy, xx)
+        high_rmse_val = high_rmse(yy, xx)
         return dict(
             Bias=bias,
             RMSE=rmse,
@@ -76,6 +137,7 @@ def statistic_1d_error(targ_i, pred_i):
             FLV=pbiaslow,
             PFE=pfe_val,
             PTE=pte_val,
+            HighRMSE=high_rmse_val,
         )
     else:
         raise ValueError(
@@ -100,7 +162,7 @@ def KGE(xs, xo):
 
 def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -> dict:
     """
-    Statistics indicators include: Bias, RMSE, ubRMSE, Corr, R2, NSE, KGE, FHV, FLV, PFE, PTE
+    Statistics indicators include: Bias, RMSE, ubRMSE, Corr, R2, NSE, KGE, FHV, FLV, PFE, PTE, HighRMSE
 
     Parameters
     ----------
@@ -118,7 +180,7 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
     Returns
     -------
     dict
-        Bias, RMSE, ubRMSE, Corr, R2, NSE, KGE, FHV, FLV
+        Bias, RMSE, ubRMSE, Corr, R2, NSE, KGE, FHV, FLV, PFE, PTE, HighRMSE
     """
     if len(target.shape) == 3:
         assert type(fill_nan) in [list, tuple, np.ndarray]
@@ -152,6 +214,7 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
             FLV=[],
             PFE=[],
             PTE=[],
+            HighRMSE=[],
         )
     if fill_nan == "sum":
         for i in range(target.shape[0]):
@@ -170,6 +233,7 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
             out_dict["FLV"].append(dict_i["FLV"])
             out_dict["PFE"].append(dict_i["PFE"])
             out_dict["PTE"].append(dict_i["PTE"])
+            out_dict["HighRMSE"].append(dict_i["HighRMSE"])
         return out_dict
     elif fill_nan == "mean":
         for i in range(target.shape[0]):
@@ -194,6 +258,7 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
             out_dict["FLV"].append(dict_i["FLV"])
             out_dict["PFE"].append(dict_i["PFE"])
             out_dict["PTE"].append(dict_i["PTE"])
+            out_dict["HighRMSE"].append(dict_i["HighRMSE"])
         return out_dict
     # TODO: refactor Dapeng's code
     ngrid, nt = pred.shape
@@ -217,6 +282,7 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
     PBias = np.full(ngrid, np.nan)
     PFE_arr = np.full(ngrid, np.nan)
     PTE_arr = np.full(ngrid, np.nan)
+    HighRMSE_arr = np.full(ngrid, np.nan)
     num_lowtarget_zero = 0
     for k in range(ngrid):
         x = pred[k, :]
@@ -257,6 +323,7 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
             PBiashigh[k] = np.sum(highpred - hightarget) / np.sum(hightarget) * 100
             PFE_arr[k] = pfe(yy, xx)
             PTE_arr[k] = pte(yy, xx)
+            HighRMSE_arr[k] = high_rmse(yy, xx)
     outDict = dict(
         Bias=Bias,
         RMSE=RMSE,
@@ -269,6 +336,7 @@ def statistic_nd_error(target: np.array, pred: np.array, fill_nan: str = "no") -
         FLV=PBiaslow,
         PFE=PFE_arr,
         PTE=PTE_arr,
+        HighRMSE=HighRMSE_arr,
     )
     return outDict
 
@@ -279,10 +347,21 @@ def calculate_and_record_metrics(
     fill_nan_value = fill_nan
     inds = statistic_nd_error(obs, pred, fill_nan_value)
 
+    # 控制输出到日志中的小数位数（不影响内部计算精度）
+    rounding_map = {
+        "NSE": 4,
+        "KGE": 4,
+        "RMSE": 4,
+        "HighRMSE": 4,
+        "PFE": 3,
+        "PTE": 2,
+    }
+
     for evaluation_metric in evaluation_metrics:
-        eval_log[f"{evaluation_metric} of {target_col}"] = inds[
-            evaluation_metric
-        ].tolist()
+        values = inds[evaluation_metric]
+        if evaluation_metric in rounding_map:
+            values = np.round(values, rounding_map[evaluation_metric])
+        eval_log[f"{evaluation_metric} of {target_col}"] = values.tolist()
 
     return eval_log
 
